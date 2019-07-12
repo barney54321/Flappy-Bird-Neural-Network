@@ -116,11 +116,11 @@ function removePipeInPlay() {
 
 function killBirds() {
     for (var i = 0; i < birds.length; i++) {
-        if (birds[i].y + birds[i].radius < pipesInPlay[0].centre - 45 &&
-            startingX - birds[i].radius > pipesInPlay[0].x) {
+        if (birds[i].y - birds[i].radius < pipesInPlay[0].centre - 50 &&
+            startingX + birds[i].radius >= pipesInPlay[0].x) {
             birds[i].die();
-        } else if (birds[i].y - birds[i].radius > pipesInPlay[0].centre + 45 &&
-            startingX > pipesInPlay[0].x) {
+        } else if (birds[i].y + birds[i].radius > pipesInPlay[0].centre + 50 &&
+            startingX + birds[i].radius >= pipesInPlay[0].x) {
             birds[i].die();
         }
     }
