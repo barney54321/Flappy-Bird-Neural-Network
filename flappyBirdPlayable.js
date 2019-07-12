@@ -139,6 +139,12 @@ function drawCanvas() {
 
 }
 
+function jump() {
+    birds[0].jump();
+}
+
+document.addEventListener("keydown", jump);
+
 setInterval(drawCanvas, 10);
 setInterval(addPipe, 1100);
 
