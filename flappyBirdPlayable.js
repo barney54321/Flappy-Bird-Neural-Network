@@ -13,12 +13,6 @@ fg.src = "./images/fg.png";
 pipeNorth.src = "./images/pipeNorth.png";
 pipeSouth.src = "./images/pipeSouth.png";
 
-var gap = 85;
-var bX = 10;
-var bY = 150;
-var g = 0.3;
-var vel = 1;
-
 class Bird {
     constructor() {
         this.x = 10;
@@ -26,6 +20,7 @@ class Bird {
         this.g = 0.3;
         this.vel = 1;
         this.img = birdImg;
+        this.fitness = 0;
     }
 
     draw() {
@@ -39,9 +34,27 @@ class Bird {
     click() {
         this.y += this.vel;
         this.vel += this.g;
+        this.fitness += 1;
         if (this.vel > 10) {
             this.vel = 10;
         }
+    }
+}
+
+class Pipe {
+    constructor() {
+        this.x = cvs.width;
+        this.y = Math.floor(Math.random() * pipeNorth.height) - pipeNorth.height;
+        this.gap = 85;
+    }
+
+    draw() {
+        ctx.drawImage(pipeNorth, this.x, this.y);
+        ctx.drawImage(pipeSouth, this.x, this.y + pipeNorth.height + this.gap);
+    }
+
+    click() {
+        this.x -= 2;
     }
 }
 
@@ -56,39 +69,33 @@ document.addEventListener("keydown", jump);
 
 // Pipes
 var pipes = [];
-pipes[0] = {
-    x: cvs.width,
-    y: 0,
-}
+pipes[0] = new Pipe();
 
 function draw() {
 
     ctx.drawImage(bg, 0, 0);
     
     for (var i = 0; i < pipes.length; i++) {
-        ctx.drawImage(pipeNorth, pipes[i].x, pipes[i].y);
-        ctx.drawImage(pipeSouth, pipes[i].x, pipes[i].y + pipeNorth.height + gap);
-        pipes[i].x -= 2;
+        pipes[i].draw();
 
         // Spawn new pipes
         if (pipes[i].x == 125 || pipes[i].x == 124) {
-            pipes.push({
-                x: cvs.width,
-                y: Math.floor(Math.random() * pipeNorth.height) - pipeNorth.height,
-            })
+            pipes.push(new Pipe());
         }
 
         // Detect collision
         if (bird.x + birdImg.width >= pipes[i].x && 
             bird.x <= pipes[i].x + pipeNorth.width &&
             (bird.y <= pipes[i].y + pipeNorth.height ||
-                bird.y + birdImg.height >= pipes[i].y + pipeNorth.height + gap)) {
+                bird.y + birdImg.height >= pipes[i].y + pipeNorth.height + pipes[i].gap)) {
             
             location.reload();
         } else if (bird.y < 0 || bird.y + birdImg.height > cvs.height - fg.height) {
 
             location.reload();
         }
+        
+        pipes[i].click();
 
     }
 
@@ -99,12 +106,5 @@ function draw() {
 
     requestAnimationFrame(draw);
 }
-
-var music = new Audio("./sounds/fly.mp3");
-music.loop = true;
-music.play();
-
-music.onload = music.play;
-
 
 bg.onload = draw;
