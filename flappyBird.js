@@ -68,7 +68,7 @@ function mutate(a) {
     for (var i = 0; i < a.length; i++) {
         res.push([]);
         for (var j = 0; j < a[0].length; j++) {
-            res[i][j] = a[i][j] + (Math.random() - 0.5) / 3;
+            res[i][j] = a[i][j] + (a[i][j] * ((Math.random() - 0.5) * 2));
         }
     }
     return res;
@@ -185,29 +185,37 @@ var birdNumber = 0;
 
 // Birds
 var birds = [];
-for (var i = 0; i < 20; i++) {
+for (var i = 0; i < 100; i++) {
     birds.push(new Bird(birdNumber));
     birdNumber += 1;
 }
 
 function compareBirds(a, b) {
-    return ((b.maxFitness + b.fitness) / 2) - ((a.maxFitness + a.fitness) / 2) ;
+    return b.fitness - a.fitness;
 }
 
 function evolve() {
     birds.sort(compareBirds);
     var nextGen = [];
 
-    // Best 4 birds progress
-    for (var i = 0; i < 4; i++) {
+    // Best 10 birds progress
+    for (var i = 0; i < 10; i++) {
         nextGen.push(new Bird(birds[i].num));
         nextGen[i].wih = birds[i].wih;
         nextGen[i].who = birds[i].who;
     }
 
-    // The remaining 16 are mutated crossovers of them
-    for (var i = 0; i < 4; i++) {
-        for (var j = 0; j < 4; j++) {
+    // Best 9 birds have a mutated version progress
+    for (var i = 0; i < 9; i++) {
+        nextGen.push(new Bird(birdNumber));
+        birdNumber += 1;
+        nextGen[i].wih = mutate(birds[i].wih);
+        nextGen[i].who = mutate(birds[i].who);
+    }
+
+    // The remaining 81 are mutated crossovers of the best
+    for (var i = 0; i < 9; i++) {
+        for (var j = 0; j < 9; j++) {
             var newBird = new Bird(birdNumber);
             birdNumber += 1;
             newBird.wih = mutate(birds[i].wih);
@@ -223,6 +231,15 @@ function evolve() {
 function draw() {
 
     ctx.drawImage(bg, 0, 0);
+
+    var living = false;
+    for (var i = 0; i < birds.length; i++) {
+        if (birds[i].live == true) {
+            living = true;
+            birds[i].draw();
+            birds[i].click();
+        }
+    }
     
     for (var i = 0; i < pipes.length; i++) {
 
@@ -262,22 +279,13 @@ function draw() {
 
     ctx.drawImage(fg, 0, cvs.height - fg.height);
 
-    var living = false;
-    for (var i = 0; i < birds.length; i++) {
-        if (birds[i].live == true) {
-            living = true;
-            birds[i].draw();
-            birds[i].click();
-        }
-    }
-
     scores.clearRect(0, 0, scoresCanvas.width, scoresCanvas.height);
     scores.font = "30px Arial";
     scores.fillText("Generation " + generation, 10, 50);
     scores.font = "15px Arial";
 
     for (var i = 0; i < 20; i++) {
-        scores.fillText("Bird " + birds[i].num + ": " + ((birds[i].fitness + birds[i].maxFitness)/2.0), 10, 80 + i * 20);
+        scores.fillText("Bird " + birds[i].num + ": " + birds[i].fitness, 10, 80 + i * 20);
     }
 
 
@@ -292,5 +300,13 @@ function draw() {
     }
     requestAnimationFrame(draw);
 }
+
+function killAll() {
+    for (var i = 0; i < birds.length; i++) {
+        birds[i].live = false;
+    }
+}
+
+document.addEventListener("keydown", killAll);
 
 bg.onload = draw;
