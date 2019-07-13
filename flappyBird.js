@@ -60,6 +60,17 @@ function applySigmoid(a) {
     return res;
 }
 
+function averageMatrices(a, b) {
+    var res = [];
+    for (var i = 0; i < a.length; i++) {
+        res.push([]);
+        for (var j = 0; j < a[0].length; j++) {
+            res[i][j] = (a[i][j] + b[i][j]) / 2;
+        }
+    }
+    return res;
+}
+
 class Bird {
     constructor() {
         this.x = 10;
@@ -139,26 +150,68 @@ class Pipe {
     }
 }
 
-// var bird = new Bird();
-
-// // Jump
-// function jump() {
-//     bird.jump();
-// }
-
-// document.addEventListener("keydown", jump);
-
 // Pipes
 var pipes = [];
 var pipesInPlay = [];
 pipes[0] = new Pipe();
 pipesInPlay[0] = pipes[0];
 
-
 // Birds
 var birds = [];
 for (var i = 0; i < 10; i++) {
     birds.push(new Bird());
+}
+
+function compareBirds(a, b) {
+    return b.fitness - a.fitness;
+}
+
+function evolve() {
+    birds.sort(compareBirds);
+    var nextGen = [];
+
+    // Best 4 birds progress
+    nextGen.push(birds[0]);
+    nextGen.push(birds[1]);
+    nextGen.push(birds[2]);
+    nextGen.push(birds[3]);
+
+    // One bird is average of two best birds
+    nextGen.push(new Bird());
+    nextGen[4].wih = averageMatrices(birds[0].wih, birds[1].wih);
+    nextGen[4].who = averageMatrices(birds[0].who, birds[1].who);
+
+    // Two birds are crossovers of the two best birds
+    nextGen.push(new Bird());
+    nextGen.push(new Bird());
+    nextGen[5].wih = birds[0].wih;
+    nextGen[6].wih = birds[1].wih;
+    nextGen[5].who = birds[1].who;
+    nextGen[6].who = birds[0].who;
+
+    // Two birds are direct copies of random birds
+    nextGen.push(new Bird());
+    var random1 = Math.floor(Math.random() * 10);
+    nextGen[7].wih = birds[random1].wih;
+    nextGen[7].who = birds[random1].who;
+
+    nextGen.push(new Bird());
+    var random2 = Math.floor(Math.random() * 10);
+    nextGen[8].wih = birds[random2].wih;
+    nextGen[8].who = birds[random2].who;
+
+    // One bird is a crossover of two random birds
+    var random3 = Math.floor(Math.random() * 4);
+    var random4 = Math.floor(Math.random() * 4);
+    nextGen.push(new Bird());
+    nextGen.push(new Bird());
+    nextGen[5].wih = birds[random3].wih;
+    nextGen[6].wih = birds[random4].wih;
+    nextGen[5].who = birds[random4].who;
+    nextGen[6].who = birds[random3].who;
+
+    birds = nextGen;
+
 }
 
 function draw() {
@@ -193,19 +246,32 @@ function draw() {
             var newPipe = new Pipe();
             pipes.push(newPipe);
             pipesInPlay.push(newPipe);
+        }
+
+        if (pipes[i].x + pipeNorth.width == birds[0].x || pipes[i].x + pipeNorth.width == birds[0].x - 1 ) {
             pipesInPlay.shift();
         }
     }
 
     ctx.drawImage(fg, 0, cvs.height - fg.height);
 
+    var living = false;
     for (var i = 0; i < birds.length; i++) {
         if (birds[i].live == true) {
+            living = true;
             birds[i].draw();
             birds[i].click();
         }
     }
 
+    if (living == false) {
+        pipes = [];
+        pipesInPlay = [];
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
+        evolve();
+        pipes[0] = new Pipe();
+        pipesInPlay[0] = pipes[0];
+    }
     requestAnimationFrame(draw);
 }
 
