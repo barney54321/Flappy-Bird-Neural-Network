@@ -100,4 +100,11 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
+var music = new Audio("./sounds/fly.mp3");
+music.loop = true;
+music.play();
+
+music.onload = music.play;
+
+
 bg.onload = draw;
