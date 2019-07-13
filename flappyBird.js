@@ -1,6 +1,9 @@
 var cvs = document.getElementById("flappyBird")
 var ctx = cvs.getContext("2d");
 
+var scoresCanvas = document.getElementById("scores")
+var scores = scoresCanvas.getContext("2d");
+
 var birdImg = new Image();
 var bg = new Image();
 var fg = new Image();
@@ -60,6 +63,17 @@ function applySigmoid(a) {
     return res;
 }
 
+function mutate(a) {
+    var res = [];
+    for (var i = 0; i < a.length; i++) {
+        res.push([]);
+        for (var j = 0; j < a[0].length; j++) {
+            res[i][j] = a[i][j] + (Math.random() - 0.5) / 2;
+        }
+    }
+    return res;
+}
+
 function averageMatrices(a, b) {
     var res = [];
     for (var i = 0; i < a.length; i++) {
@@ -81,14 +95,14 @@ class Bird {
         this.fitness = 0;
         this.live = true;
 
-        // From 3 to 6
+        // From 2 to 6
         this.wih = [
-            [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-            [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-            [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-            [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-            [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-            [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
+            [Math.random() - 0.5, Math.random() - 0.5],
+            [Math.random() - 0.5, Math.random() - 0.5],
+            [Math.random() - 0.5, Math.random() - 0.5],
+            [Math.random() - 0.5, Math.random() - 0.5],
+            [Math.random() - 0.5, Math.random() - 0.5],
+            [Math.random() - 0.5, Math.random() - 0.5],
          ];
 
         // From 6 to 1
@@ -103,7 +117,7 @@ class Bird {
     }
 
     jumpCalculator() {
-        var inputs = transpose([this.x - pipesInPlay[0].x, this.y - pipesInPlay[0].centre, this.vel]);
+        var inputs = transpose([this.x - pipesInPlay[0].x, this.y - pipesInPlay[0].centre]);
         var hiddenOutput = matrixMultiply(this.wih, inputs);
         var hiddenResult = applySigmoid(hiddenOutput);
         var outputs = matrixMultiply(this.who, hiddenResult);
@@ -112,11 +126,11 @@ class Bird {
     }
 
     jump() {
-        this.vel = -5;
+        this.vel = -4;
     }
 
     jumper() {
-        if (this.jumpCalculator() > 0.5) {
+        if (this.jumpCalculator() > 0.6) {
             this.jump();
         }
     }
@@ -129,6 +143,10 @@ class Bird {
         if (this.vel > 10) {
             this.vel = 10;
         }
+    }
+
+    rebirth() {
+        this.live = true;
     }
 }
 
@@ -154,6 +172,7 @@ class Pipe {
 var pipes = [];
 var pipesInPlay = [];
 pipes[0] = new Pipe();
+pipes[0].y = -100;
 pipesInPlay[0] = pipes[0];
 
 // Birds
@@ -161,6 +180,8 @@ var birds = [];
 for (var i = 0; i < 10; i++) {
     birds.push(new Bird());
 }
+
+var generation = 1;
 
 function compareBirds(a, b) {
     return b.fitness - a.fitness;
@@ -171,10 +192,14 @@ function evolve() {
     var nextGen = [];
 
     // Best 4 birds progress
-    nextGen.push(birds[0]);
-    nextGen.push(birds[1]);
-    nextGen.push(birds[2]);
-    nextGen.push(birds[3]);
+    nextGen.push(new Bird());
+    nextGen.push(new Bird());
+    nextGen.push(new Bird());
+    nextGen.push(new Bird());
+    for (var i = 0; i < 4; i++) {
+        nextGen[i].wih = birds[i].wih;
+        nextGen[i].who = birds[i].who;
+    }
 
     // One bird is average of two best birds
     nextGen.push(new Bird());
@@ -189,28 +214,28 @@ function evolve() {
     nextGen[5].who = birds[1].who;
     nextGen[6].who = birds[0].who;
 
-    // Two birds are direct copies of random birds
+    // One bird is a direct copies of a random bird
     nextGen.push(new Bird());
     var random1 = Math.floor(Math.random() * 10);
     nextGen[7].wih = birds[random1].wih;
     nextGen[7].who = birds[random1].who;
 
+    // One bird is a mutation of the best bird
     nextGen.push(new Bird());
-    var random2 = Math.floor(Math.random() * 10);
-    nextGen[8].wih = birds[random2].wih;
-    nextGen[8].who = birds[random2].who;
+    nextGen[8].wih = mutate(birds[0].wih);
+    nextGen[8].who = mutate(birds[0].who);
 
     // One bird is a crossover of two random birds
     var random3 = Math.floor(Math.random() * 4);
     var random4 = Math.floor(Math.random() * 4);
     nextGen.push(new Bird());
-    nextGen.push(new Bird());
     nextGen[5].wih = birds[random3].wih;
-    nextGen[6].wih = birds[random4].wih;
     nextGen[5].who = birds[random4].who;
-    nextGen[6].who = birds[random3].who;
 
     birds = nextGen;
+    generation += 1;
+
+    birds[0].rebirth();
 
 }
 
@@ -242,7 +267,7 @@ function draw() {
     for (var i = 0; i < pipes.length; i++) {
         pipes[i].draw();
         pipes[i].click();
-        if (pipes[i].x == 125 || pipes[i].x == 124) {
+        if (pipes[i].x == 105 || pipes[i].x == 104) {
             var newPipe = new Pipe();
             pipes.push(newPipe);
             pipesInPlay.push(newPipe);
@@ -264,6 +289,15 @@ function draw() {
         }
     }
 
+    scores.clearRect(0, 0, scoresCanvas.width, scoresCanvas.height);
+    scores.font = "30px Arial";
+    scores.fillText("Generation " + generation, 10, 50);
+
+    for (var i = 0; i < 10; i++) {
+        scores.fillText("Bird " + i + ": " + birds[i].fitness, 10, 80 + i * 40);
+    }
+
+
     if (living == false) {
         pipes = [];
         pipesInPlay = [];
@@ -271,315 +305,9 @@ function draw() {
         evolve();
         pipes[0] = new Pipe();
         pipesInPlay[0] = pipes[0];
+        pipes[0].y = -100;
     }
     requestAnimationFrame(draw);
 }
 
 bg.onload = draw;
-
-// class Bird {
-//     constructor() {
-//         this.y = 50;
-//         this.vel = 2;
-//         this.fitness = 0;
-//         this.live = true;
-//         this.radius = 15;
-
-//         // From 3 to 6
-//         this.wih = [
-//             [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-//             [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-//             [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-//             [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-//             [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-//             [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5],
-//          ];
-
-//         // From 6 to 1
-//         this.who = [
-//             [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5, ]
-//         ];
-//     }
-
-//     jumpCalculator() {
-//         var inputs = transpose([startingX - pipesInPlay[0].x, this.y - pipesInPlay[0].centre, this.vel]);
-//         var hiddenOutput = matrixMultiply(this.wih, inputs);
-//         var hiddenResult = applySigmoid(hiddenOutput);
-//         var outputs = matrixMultiply(this.who, hiddenResult);
-//         var result = applySigmoid(outputs);
-//         return result[0][0];
-//     }
-
-//     jumper() {
-//         var res = this.jumpCalculator();
-//         if (res > 0.5) {
-//             this.jump();
-//         }
-//     }
-
-//     click() {
-//         this.jumper();
-//         this.y += this.vel;
-//         this.fitness += 1;
-//         if (this.vel < 6) {
-//             this.vel += 0.2;
-//         }
-//         if (this.y > height) {
-//             this.die();
-//         } else if (this.y < 0) {
-//             this.die();
-//         }
-//     }
-
-//     jump() {
-//         if (this.live) {
-//             this.vel = -4;
-//         }
-//     }
-
-//     draw(context) {
-//         if (this.live) {
-//             context.fillStyle = "#f5f242";
-//             context.beginPath();
-//             context.arc(startingX, this.y, this.radius, 0, 2 * Math.PI);
-//             context.stroke();
-//             this.click();
-//         }
-//     }
-
-//     die() {
-//         this.live = false;
-//     }
-// }
-
-// class Pipe {
-//     constructor() {
-//         this.diff = Math.random() * 200;
-//         this.width = 50;
-//         this.centre = height/2 - 100 + this.diff;
-//         this.x = 700;
-//     }
-
-//     click() {
-//         this.x -= 2;
-//     }
-
-//     draw(context) {
-//         context.fillStyle = "#2a8000";
-//         context.beginPath();
-//         context.fillRect(this.x, -10, this.width, height/2 - 145 + this.diff);
-//         context.stroke();
-
-//         context.beginPath();
-//         context.fillRect(this.x, height/2 - 45 + this.diff, this.width, 500);
-//         context.stroke();
-
-//         this.click();
-//     }
-// }
-
-// function renderBirds(context) {
-//     for (var i = 0; i < birds.length; i++) {
-//         birds[i].draw(context);
-//     }
-// }
-
-// function renderPipes(context) {
-//     for (var i = 0; i < pipes.length; i++) {
-//         pipes[i].draw(context);
-//     }
-// }
-
-// function addPipe() {
-//     var p = new Pipe();
-//     pipes.push(p);
-//     pipesInPlay.push(p);
-// }
-
-// function removePipe() {
-//     if (pipes[0].x < -50) {
-//         pipes.shift();
-//     }
-// }
-
-// function removePipeInPlay() {
-//     if (pipesInPlay[0].x + 50 < 150) {
-//         pipesInPlay.shift();
-//     }
-// }
-
-// function killBirds() {
-//     for (var i = 0; i < birds.length; i++) {
-//         if (birds[i].y - birds[i].radius < pipesInPlay[0].centre - 50 &&
-//             startingX + birds[i].radius >= pipesInPlay[0].x) {
-//             birds[i].die();
-//         } else if (birds[i].y + birds[i].radius > pipesInPlay[0].centre + 50 &&
-//             startingX + birds[i].radius >= pipesInPlay[0].x) {
-//             birds[i].die();
-//         }
-//     }
-// }
-
-// var drawInterval = [];
-// var pipeInterval = [];
-// var birds;
-// var pipes;
-// var pipesInPlay;
-// var generation = 0;
-
-// function startGame() {
-
-//     birds = [];
-//     pipes = [];
-//     pipesInPlay = [];
-
-//     for (var i = 0; i < 10; i++) {
-//         birds[i] = new Bird();
-//     }
-
-//     addPipe();
-// }
-
-// function resetGame() {
-
-//     var run = false;
-//     for (var i = 0; i < 10 && run == false; i++) {
-//         if (birds[i].live == true) {
-//             run = true;
-//         }
-//     }
-
-//     if (run == true) {
-//         return;
-//     }
-
-//     clearInterval(drawCanvas[generation]);
-//     clearInterval(pipeInterval[generation]);
-//     context.clearRect(0, 0, width, height);
-//     pipes = [];
-
-//     // Create next generation
-
-
-//     // Restart game
-//     birds = [];
-//     pipes = [];
-//     pipesInPlay = [];
-
-//     for (var i = 0; i < 10; i++) {
-//         birds[i] = new Bird();
-//     }
-
-//     addPipe();
-//     generation += 1;
-//     drawInterval.push(setInterval(drawCanvas, 10));
-//     pipeInterval.push(setInterval(addPipe, 1200));
-
-// }
-
-// function drawCanvas() {
-
-//     context.clearRect(0, 0, width, height);
-    
-//     renderBirds(context);
-//     renderPipes(context);
-//     removePipe();
-//     removePipeInPlay();
-//     killBirds();
-//     resetGame();
-
-
-// }
-
-// startGame();
-
-// drawInterval = setInterval(drawCanvas, 10);
-// pipeInterval = setInterval(addPipe, 1200);
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // function crossover(a, b) {
-// //     var x = new Bird();
-// //     var y = new Bird();
-
-// //     x.wih = a.wih.slice();
-// //     x.who = b.who.slice();
-// //     y.wih = b.wih.slice();
-// //     y.who = b.who.slice();
-
-// //     return [x, y]
-// // }
-
-
-// // function compareBirds(a, b) {
-// //     return b.fitness - a.fitness;
-// // }
-
-// // function evolution() {
-// //     birds.sort(compareBirds);
-// //     [birds[4], birds[5]] = crossover(birds[0], birds[1]);
-// //     [birds[6], birds[7]] = crossover(birds[Math.floor(Math.random() * 4)], birds[Math.floor(Math.random() * 4)]);
-// //     birds[8] = new Bird();
-// //     // birds[8].wih = birds[Math.floor(Math.random() * 4)].wih.splice();
-// //     birds[9] = birds[Math.floor(Math.random() * 10)];
-// // }
-
-// // for (var i = 0; i < 10; i++) {
-// //     var bird = new Bird();
-// //     birds.push(bird);
-// // }
-
-// // var drawInterval;
-// // var pipeInterval;
-
-// // function runner() {
-
-// //     function startGame(newBirds) {
-// //         birds = newBirds;
-// //         pipes = [];
-// //         pipesInPlay = [];
-// //         addPipe();
-
-// //         drawInterval = setInterval(drawCanvas, 10);
-// //         pipeInterval = setInterval(addPipe, 1200);
-// //         var endInterval;
-
-// //         function checkEnd() {
-// //             var end = true;
-// //             for (var i = 0; i < birds.length; i++) {
-// //                 if (birds[i].live == true) {
-// //                     end = false;
-// //                     break;
-// //                 }
-// //             }
-
-// //             if (end == true) {
-// //                 clearInterval(drawInterval);
-// //                 clearInterval(pipeInterval);
-// //                 clearInterval(endInterval);
-// //                 context.clearRect(0, 0, width, height);
-// //                 evolution();
-// //                 startGame(newBirds)
-// //             }
-// //         }
-
-// //         endInterval = setInterval(checkEnd, 10);
-// //     }
-
-// //     startGame(birds);
-
-// // }
-
-// // runner();
-
-
