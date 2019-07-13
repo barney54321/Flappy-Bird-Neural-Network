@@ -68,7 +68,7 @@ function mutate(a) {
     for (var i = 0; i < a.length; i++) {
         res.push([]);
         for (var j = 0; j < a[0].length; j++) {
-            res[i][j] = a[i][j] + (Math.random() - 0.5) / 2;
+            res[i][j] = a[i][j] + (Math.random() - 0.5) / 3;
         }
     }
     return res;
@@ -92,9 +92,10 @@ class Bird {
         this.g = 0.3;
         this.vel = 1;
         this.img = birdImg;
-        this.fitness = 0;
+        this.fitness = 0.0;
         this.live = true;
         this.num = num;
+        this.maxFitness = 0;
 
         // From 2 to 6
         this.wih = [
@@ -137,12 +138,15 @@ class Bird {
     }
 
     click() {
-        this.fitness += 1;
+        this.fitness += 1.0;
         this.jumper();
         this.y += this.vel;
         this.vel += this.g;
         if (this.vel > 10) {
             this.vel = 10;
+        }
+        if (this.fitness > this.maxFitness) {
+            this.maxFitness = this.fitness;
         }
     }
 
@@ -181,13 +185,13 @@ var birdNumber = 0;
 
 // Birds
 var birds = [];
-for (var i = 0; i < 10; i++) {
+for (var i = 0; i < 20; i++) {
     birds.push(new Bird(birdNumber));
     birdNumber += 1;
 }
 
 function compareBirds(a, b) {
-    return b.fitness - a.fitness;
+    return ((b.maxFitness + b.fitness) / 2) - ((a.maxFitness + a.fitness) / 2) ;
 }
 
 function evolve() {
@@ -201,42 +205,16 @@ function evolve() {
         nextGen[i].who = birds[i].who;
     }
 
-    // One bird is average of two best birds
-    nextGen.push(new Bird(birdNumber));
-    birdNumber += 1;
-    nextGen[4].wih = averageMatrices(birds[0].wih, birds[1].wih);
-    nextGen[4].who = averageMatrices(birds[0].who, birds[1].who);
-
-    // Two birds are crossovers of the two best birds
-    nextGen.push(new Bird(birdNumber));
-    birdNumber += 1;
-    nextGen.push(new Bird(birdNumber));
-    birdNumber += 1;
-    nextGen[5].wih = birds[0].wih;
-    nextGen[6].wih = birds[1].wih;
-    nextGen[5].who = birds[1].who;
-    nextGen[6].who = birds[0].who;
-
-    // One bird is a direct copies of a random bird
-    nextGen.push(new Bird(birdNumber));
-    birdNumber += 1;
-    var random1 = Math.floor(Math.random() * 10);
-    nextGen[7].wih = birds[random1].wih;
-    nextGen[7].who = birds[random1].who;
-
-    // One bird is a mutation of the best bird
-    nextGen.push(new Bird(birdNumber));
-    birdNumber += 1;
-    nextGen[8].wih = mutate(birds[0].wih);
-    nextGen[8].who = mutate(birds[0].who);
-
-    // One bird is a crossover of two random birds
-    var random3 = Math.floor(Math.random() * 4);
-    var random4 = Math.floor(Math.random() * 4);
-    nextGen.push(new Bird(birdNumber));
-    birdNumber += 1;
-    nextGen[5].wih = birds[random3].wih;
-    nextGen[5].who = birds[random4].who;
+    // The remaining 16 are mutated crossovers of them
+    for (var i = 0; i < 4; i++) {
+        for (var j = 0; j < 4; j++) {
+            var newBird = new Bird(birdNumber);
+            birdNumber += 1;
+            newBird.wih = mutate(birds[i].wih);
+            newBird.who = mutate(birds[j].who);
+            nextGen.push(newBird);
+        }
+    }
 
     birds = nextGen;
     generation += 1;
@@ -259,6 +237,7 @@ function draw() {
                     (birds[j].y <= pipes[i].y + pipeNorth.height || birds[j].y + birdImg.height >= pipes[i].y + pipeNorth.height + pipes[i].gap)) {
                     
                     birds[j].live = false;
+                    birds[j].fitness += (1 - (birds[j].y - pipes[i].centre)/ cvs.height);
                 } else if (birds[j].y < 0 || birds[j].y + birdImg.height > cvs.height - fg.height) {
 
                     birds[j].live = false;
@@ -295,9 +274,10 @@ function draw() {
     scores.clearRect(0, 0, scoresCanvas.width, scoresCanvas.height);
     scores.font = "30px Arial";
     scores.fillText("Generation " + generation, 10, 50);
+    scores.font = "15px Arial";
 
-    for (var i = 0; i < 10; i++) {
-        scores.fillText("Bird " + birds[i].num + ": " + birds[i].fitness, 10, 80 + i * 40);
+    for (var i = 0; i < 20; i++) {
+        scores.fillText("Bird " + birds[i].num + ": " + ((birds[i].fitness + birds[i].maxFitness)/2.0), 10, 80 + i * 20);
     }
 
 
