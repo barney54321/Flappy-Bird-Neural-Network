@@ -86,7 +86,7 @@ function averageMatrices(a, b) {
 }
 
 class Bird {
-    constructor() {
+    constructor(num) {
         this.x = 10;
         this.y = 150;
         this.g = 0.3;
@@ -94,6 +94,7 @@ class Bird {
         this.img = birdImg;
         this.fitness = 0;
         this.live = true;
+        this.num = num;
 
         // From 2 to 6
         this.wih = [
@@ -175,13 +176,15 @@ pipes[0] = new Pipe();
 pipes[0].y = -100;
 pipesInPlay[0] = pipes[0];
 
+var generation = 1;
+var birdNumber = 0;
+
 // Birds
 var birds = [];
 for (var i = 0; i < 10; i++) {
-    birds.push(new Bird());
+    birds.push(new Bird(birdNumber));
+    birdNumber += 1;
 }
-
-var generation = 1;
 
 function compareBirds(a, b) {
     return b.fitness - a.fitness;
@@ -192,51 +195,51 @@ function evolve() {
     var nextGen = [];
 
     // Best 4 birds progress
-    nextGen.push(new Bird());
-    nextGen.push(new Bird());
-    nextGen.push(new Bird());
-    nextGen.push(new Bird());
     for (var i = 0; i < 4; i++) {
+        nextGen.push(new Bird(birds[i].num));
         nextGen[i].wih = birds[i].wih;
         nextGen[i].who = birds[i].who;
     }
 
     // One bird is average of two best birds
-    nextGen.push(new Bird());
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
     nextGen[4].wih = averageMatrices(birds[0].wih, birds[1].wih);
     nextGen[4].who = averageMatrices(birds[0].who, birds[1].who);
 
     // Two birds are crossovers of the two best birds
-    nextGen.push(new Bird());
-    nextGen.push(new Bird());
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
     nextGen[5].wih = birds[0].wih;
     nextGen[6].wih = birds[1].wih;
     nextGen[5].who = birds[1].who;
     nextGen[6].who = birds[0].who;
 
     // One bird is a direct copies of a random bird
-    nextGen.push(new Bird());
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
     var random1 = Math.floor(Math.random() * 10);
     nextGen[7].wih = birds[random1].wih;
     nextGen[7].who = birds[random1].who;
 
     // One bird is a mutation of the best bird
-    nextGen.push(new Bird());
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
     nextGen[8].wih = mutate(birds[0].wih);
     nextGen[8].who = mutate(birds[0].who);
 
     // One bird is a crossover of two random birds
     var random3 = Math.floor(Math.random() * 4);
     var random4 = Math.floor(Math.random() * 4);
-    nextGen.push(new Bird());
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
     nextGen[5].wih = birds[random3].wih;
     nextGen[5].who = birds[random4].who;
 
     birds = nextGen;
     generation += 1;
-
-    birds[0].rebirth();
-
 }
 
 function draw() {
@@ -294,7 +297,7 @@ function draw() {
     scores.fillText("Generation " + generation, 10, 50);
 
     for (var i = 0; i < 10; i++) {
-        scores.fillText("Bird " + i + ": " + birds[i].fitness, 10, 80 + i * 40);
+        scores.fillText("Bird " + birds[i].num + ": " + birds[i].fitness, 10, 80 + i * 40);
     }
 
 
