@@ -132,7 +132,7 @@ class Bird {
     }
 
     jumper() {
-        if (this.jumpCalculator() > 0.6) {
+        if (this.jumpCalculator() > 0.5) {
             this.jump();
         }
     }
@@ -182,10 +182,12 @@ pipesInPlay[0] = pipes[0];
 
 var generation = 1;
 var birdNumber = 0;
+var average = 0;
+var bestAverage = 0;
 
 // Birds
 var birds = [];
-for (var i = 0; i < 100; i++) {
+for (var i = 0; i < 20; i++) {
     birds.push(new Bird(birdNumber));
     birdNumber += 1;
 }
@@ -198,24 +200,46 @@ function evolve() {
     birds.sort(compareBirds);
     var nextGen = [];
 
-    // Best 10 birds progress
-    for (var i = 0; i < 10; i++) {
+    // Best 4 birds progress
+    for (var i = 0; i < 4; i++) {
         nextGen.push(new Bird(birds[i].num));
         nextGen[i].wih = birds[i].wih;
         nextGen[i].who = birds[i].who;
     }
 
-    // Best 9 birds have a mutated version progress
-    for (var i = 0; i < 9; i++) {
+    // Best 2 birds have an offspring from their averages
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
+    nextGen[4].wih = averageMatrices(birds[0].wih, birds[1].wih);
+    nextGen[4].who = averageMatrices(birds[0].who, birds[1].who);
+
+    // Best 2 birds have a mutated version progress
+    for (var i = 0; i < 3; i++) {
         nextGen.push(new Bird(birdNumber));
         birdNumber += 1;
         nextGen[i].wih = mutate(birds[i].wih);
         nextGen[i].who = mutate(birds[i].who);
     }
 
-    // The remaining 81 are mutated crossovers of the best
-    for (var i = 0; i < 9; i++) {
-        for (var j = 0; j < 9; j++) {
+    // Best 2 birds have a less mutated version progress
+    for (var i = 0; i < 2; i++) {
+        nextGen.push(new Bird(birdNumber));
+        birdNumber += 1;
+        nextGen[i].wih = mutate(birds[i].wih);
+        nextGen[i].who = birds[i].who;
+    }
+
+    // Best 2 birds have a less mutated version progress
+    for (var i = 0; i < 2; i++) {
+        nextGen.push(new Bird(birdNumber));
+        birdNumber += 1;
+        nextGen[i].wih = birds[i].wih;
+        nextGen[i].who = mutate(birds[i].who);
+    }
+
+    // The remaining 9 are mutated crossovers of the best
+    for (var i = 0; i < 3; i++) {
+        for (var j = 0; j < 3; j++) {
             var newBird = new Bird(birdNumber);
             birdNumber += 1;
             newBird.wih = mutate(birds[i].wih);
@@ -233,12 +257,19 @@ function draw() {
     ctx.drawImage(bg, 0, 0);
 
     var living = false;
+    average = 0;
     for (var i = 0; i < birds.length; i++) {
         if (birds[i].live == true) {
             living = true;
             birds[i].draw();
             birds[i].click();
         }
+        average += birds[i].fitness;
+    }
+    average /= birds.length;
+
+    if (average > bestAverage) {
+        bestAverage = average;
     }
     
     for (var i = 0; i < pipes.length; i++) {
@@ -283,9 +314,11 @@ function draw() {
     scores.font = "30px Arial";
     scores.fillText("Generation " + generation, 10, 50);
     scores.font = "15px Arial";
+    scores.fillText("Best average fitness: " + Math.floor(bestAverage), 10, 80);
+    scores.fillText("Average fitness: " + Math.floor(average), 10, 100);
 
     for (var i = 0; i < 20; i++) {
-        scores.fillText("Bird " + birds[i].num + ": " + birds[i].fitness, 10, 80 + i * 20);
+        scores.fillText("Bird " + birds[i].num + ": " + birds[i].fitness, 10, 120 + i * 20);
     }
 
 
