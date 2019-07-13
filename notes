@@ -12,7 +12,6 @@ Replacement Strategy:
 1. Sort the units by their fitness
 2. Select the top 4 units and pass them onto next generation
 3. Create 2 offspring as a crossover product of two best winners
-4. Create 1 offspring a the average of the two best winners
 5. Create 2 offspring as a crossover product of two random winners
-6. Create 1 offspring as a direct copy of a random winner
+6. Create 2 offspring as a direct copy of a random winner
 7. Apply random mutation on each offspring to add some variations

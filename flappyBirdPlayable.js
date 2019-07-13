@@ -1,150 +1,103 @@
-var canvas = document.getElementById("flappyBird");
-var context = canvas.getContext("2d");
+var cvs = document.getElementById("flappyBird")
+var ctx = cvs.getContext("2d");
 
-var width = canvas.scrollWidth;
-var height = canvas.scrollHeight;
+var birdImg = new Image();
+var bg = new Image();
+var fg = new Image();
+var pipeNorth = new Image();
+var pipeSouth = new Image();
 
-var startingX = 150;
+birdImg.src = "./images/bird.png";
+bg.src = "./images/bg.png";
+fg.src = "./images/fg.png";
+pipeNorth.src = "./images/pipeNorth.png";
+pipeSouth.src = "./images/pipeSouth.png";
+
+var gap = 85;
+var bX = 10;
+var bY = 150;
+var g = 0.3;
+var vel = 1;
 
 class Bird {
     constructor() {
-        this.y = 50;
-        this.vel = 2;
-        this.fitness = 0;
-        this.live = true;
-        this.radius = 15;
+        this.x = 10;
+        this.y = 150;
+        this.g = 0.3;
+        this.vel = 1;
+        this.img = birdImg;
+    }
+
+    draw() {
+        ctx.drawImage(this.img, this.x, this.y);
+    }
+
+    jump() {
+        this.vel = -5;
     }
 
     click() {
         this.y += this.vel;
-        this.score += 1;
-        if (this.vel < 6) {
-            this.vel += 0.2;
+        this.vel += this.g;
+        if (this.vel > 10) {
+            this.vel = 10;
         }
-        if (this.y > height) {
-            this.die();
-        } else if (this.y < 0) {
-            this.die();
-        }
-    }
-
-    jump() {
-        if (this.live) {
-            this.vel = -4;
-        }
-    }
-
-    draw(context) {
-        if (this.live) {
-            context.fillStyle = "#f5f242";
-            context.beginPath();
-            context.arc(startingX, this.y, this.radius, 0, 2 * Math.PI);
-            context.stroke();
-            this.click();
-        }
-    }
-
-    die() {
-        this.live = false;
     }
 }
-
-class Pipe {
-    constructor() {
-        this.diff = Math.random() * 200;
-        this.centre = height/2 - 100 + this.diff;
-        this.x = 700;
-    }
-
-    click() {
-        this.x -= 2;
-    }
-
-    draw(context) {
-        context.fillStyle = "#2a8000";
-        context.beginPath();
-        context.fillRect(this.x, -10, 50, height/2 - 145 + this.diff);
-        context.stroke();
-
-        context.beginPath();
-        context.fillRect(this.x, height/2 - 45 + this.diff, 50, 500);
-        context.stroke();
-
-        this.click();
-    }
-}
-
-var birds = [];
-var pipes = [];
-var pipesInPlay = [];
 
 var bird = new Bird();
-var pipe = new Pipe();
-birds.push(bird);
-pipes.push(pipe);
-pipesInPlay.push(pipe);
 
-function renderBirds(context) {
-    for (var i = 0; i < birds.length; i++) {
-        birds[i].draw(context);
-    }
-}
-
-function renderPipes(context) {
-    for (var i = 0; i < pipes.length; i++) {
-        pipes[i].draw(context);
-    }
-}
-
-function addPipe() {
-    var p = new Pipe();
-    pipes.push(p);
-    pipesInPlay.push(p);
-}
-
-function removePipe() {
-    if (pipes[0].x < -50) {
-        pipes.shift();
-    }
-}
-
-function removePipeInPlay() {
-    if (pipesInPlay[0].x + 50 < 150) {
-        pipesInPlay.shift();
-    }
-}
-
-function killBirds() {
-    for (var i = 0; i < birds.length; i++) {
-        if (birds[i].y - birds[i].radius < pipesInPlay[0].centre - 50 &&
-            startingX + birds[i].radius >= pipesInPlay[0].x) {
-            birds[i].die();
-        } else if (birds[i].y + birds[i].radius > pipesInPlay[0].centre + 50 &&
-            startingX + birds[i].radius >= pipesInPlay[0].x) {
-            birds[i].die();
-        }
-    }
-}
-
-
-function drawCanvas() {
-
-    context.clearRect(0, 0, width, height);
-    
-    renderBirds(context);
-    renderPipes(context);
-    removePipe();
-    removePipeInPlay();
-    killBirds();
-
-}
-
+// Jump
 function jump() {
-    birds[0].jump();
+    bird.jump();
 }
 
 document.addEventListener("keydown", jump);
 
-setInterval(drawCanvas, 10);
-setInterval(addPipe, 1100);
+// Pipes
+var pipes = [];
+pipes[0] = {
+    x: cvs.width,
+    y: 0,
+}
 
+function draw() {
+
+    ctx.drawImage(bg, 0, 0);
+    
+    for (var i = 0; i < pipes.length; i++) {
+        ctx.drawImage(pipeNorth, pipes[i].x, pipes[i].y);
+        ctx.drawImage(pipeSouth, pipes[i].x, pipes[i].y + pipeNorth.height + gap);
+        pipes[i].x -= 2;
+
+        // Spawn new pipes
+        if (pipes[i].x == 125 || pipes[i].x == 124) {
+            pipes.push({
+                x: cvs.width,
+                y: Math.floor(Math.random() * pipeNorth.height) - pipeNorth.height,
+            })
+        }
+
+        // Detect collision
+        if (bird.x + birdImg.width >= pipes[i].x && 
+            bird.x <= pipes[i].x + pipeNorth.width &&
+            (bird.y <= pipes[i].y + pipeNorth.height ||
+                bird.y + birdImg.height >= pipes[i].y + pipeNorth.height + gap)) {
+            
+            location.reload();
+        } else if (bird.y < 0 || bird.y + birdImg.height > cvs.height - fg.height) {
+
+            location.reload();
+        }
+
+    }
+
+    ctx.drawImage(fg, 0, cvs.height - fg.height);
+
+    bird.draw();
+    bird.click();
+
+    requestAnimationFrame(draw);
+}
+
+bg.onload = draw;

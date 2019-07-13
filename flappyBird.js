@@ -96,7 +96,7 @@ class Bird {
     click() {
         this.jumper();
         this.y += this.vel;
-        this.score += 1;
+        this.fitness += 1;
         if (this.vel < 6) {
             this.vel += 0.2;
         }
@@ -154,18 +154,6 @@ class Pipe {
     }
 }
 
-function compareBirds(a, b) {
-    return b.fitness - a.fitness;
-}
-
-function evolution() {
-    // birds.sort(compareBirds)
-}
-
-var birds = [];
-var pipes = [];
-var pipesInPlay = [];
-
 function renderBirds(context) {
     for (var i = 0; i < birds.length; i++) {
         birds[i].draw(context);
@@ -208,6 +196,63 @@ function killBirds() {
     }
 }
 
+var drawInterval = [];
+var pipeInterval = [];
+var birds;
+var pipes;
+var pipesInPlay;
+var generation = 0;
+
+function startGame() {
+
+    birds = [];
+    pipes = [];
+    pipesInPlay = [];
+
+    for (var i = 0; i < 10; i++) {
+        birds[i] = new Bird();
+    }
+
+    addPipe();
+}
+
+function resetGame() {
+
+    var run = false;
+    for (var i = 0; i < 10 && run == false; i++) {
+        if (birds[i].live == true) {
+            run = true;
+        }
+    }
+
+    if (run == true) {
+        return;
+    }
+
+    clearInterval(drawCanvas[generation]);
+    clearInterval(pipeInterval[generation]);
+    context.clearRect(0, 0, width, height);
+    pipes = [];
+
+    // Create next generation
+
+
+    // Restart game
+    birds = [];
+    pipes = [];
+    pipesInPlay = [];
+
+    for (var i = 0; i < 10; i++) {
+        birds[i] = new Bird();
+    }
+
+    addPipe();
+    generation += 1;
+    drawInterval.push(setInterval(drawCanvas, 10));
+    pipeInterval.push(setInterval(addPipe, 1200));
+
+}
+
 function drawCanvas() {
 
     context.clearRect(0, 0, width, height);
@@ -217,32 +262,100 @@ function drawCanvas() {
     removePipe();
     removePipeInPlay();
     killBirds();
+    resetGame();
+
 
 }
 
-var birds = [];
-var alive = []
-for (var i = 0; i < 10; i++) {
-    var bird = new Bird();
-    birds.push(bird);
-    alive.push(bird);
-}
+startGame();
 
-var drawInterval;
-var pipeInterval;
-
-function startGame(newBirds) {
-    birds = newBirds;
-    pipes = [];
-    pipesInPlay = [];
-    addPipe();
-
-    drawInterval = setInterval(drawCanvas, 10);
-    pipeInterval = setInterval(addPipe, 1200);
-}
-
-startGame(birds);
+drawInterval = setInterval(drawCanvas, 10);
+pipeInterval = setInterval(addPipe, 1200);
 
 
-// console.log(allDead);
+
+
+
+
+
+
+
+
+
+
+
+// function crossover(a, b) {
+//     var x = new Bird();
+//     var y = new Bird();
+
+//     x.wih = a.wih.slice();
+//     x.who = b.who.slice();
+//     y.wih = b.wih.slice();
+//     y.who = b.who.slice();
+
+//     return [x, y]
+// }
+
+
+// function compareBirds(a, b) {
+//     return b.fitness - a.fitness;
+// }
+
+// function evolution() {
+//     birds.sort(compareBirds);
+//     [birds[4], birds[5]] = crossover(birds[0], birds[1]);
+//     [birds[6], birds[7]] = crossover(birds[Math.floor(Math.random() * 4)], birds[Math.floor(Math.random() * 4)]);
+//     birds[8] = new Bird();
+//     // birds[8].wih = birds[Math.floor(Math.random() * 4)].wih.splice();
+//     birds[9] = birds[Math.floor(Math.random() * 10)];
+// }
+
+// for (var i = 0; i < 10; i++) {
+//     var bird = new Bird();
+//     birds.push(bird);
+// }
+
+// var drawInterval;
+// var pipeInterval;
+
+// function runner() {
+
+//     function startGame(newBirds) {
+//         birds = newBirds;
+//         pipes = [];
+//         pipesInPlay = [];
+//         addPipe();
+
+//         drawInterval = setInterval(drawCanvas, 10);
+//         pipeInterval = setInterval(addPipe, 1200);
+//         var endInterval;
+
+//         function checkEnd() {
+//             var end = true;
+//             for (var i = 0; i < birds.length; i++) {
+//                 if (birds[i].live == true) {
+//                     end = false;
+//                     break;
+//                 }
+//             }
+
+//             if (end == true) {
+//                 clearInterval(drawInterval);
+//                 clearInterval(pipeInterval);
+//                 clearInterval(endInterval);
+//                 context.clearRect(0, 0, width, height);
+//                 evolution();
+//                 startGame(newBirds)
+//             }
+//         }
+
+//         endInterval = setInterval(checkEnd, 10);
+//     }
+
+//     startGame(birds);
+
+// }
+
+// runner();
+
 
