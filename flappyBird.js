@@ -16,90 +16,23 @@ fg.src = "./images/fg.png";
 pipeNorth.src = "./images/pipeNorth.png";
 pipeSouth.src = "./images/pipeSouth.png";
 
-function matrixMultiply(a, b) {
-    
-    var res = [];
-
-    var n = a[0].length;
-    var m = a.length;
-    var p = b[0].length;
-
-    for (var i = 0; i < m; i++) {
-        var arr = [];
-        for (var j = 0; j < p; j++) {
-            arr.push(0);
-        }
-        res.push(arr);
-    }
-
-    for(var i = 0; i < m; i++) {
-        for(var j = 0; j < p; j++) {
-            for(var k = 0; k < n; k++) {
-                res[i][j] += a[i][k] * b[k][j];
-            }
-        }
-    }
-
-    return res;
-}
-
-function transpose(a) {
-    var res = [];
-    for (var i = 0; i < a.length; i++) {
-        res[i] = [a[i]];
-    }
-    return res;
-}
-
-function applySigmoid(a) {
-
-    var res = [];
-
-    // We know that res will be a n * 1 matrix
-    for (var i = 0; i < a.length; i++) {
-        res.push([1 / (1 + Math.pow(Math.E, a[i][0] * (-1)))]);
-    }
-
-    return res;
-}
-
-function mutate(a) {
-    var res = [];
-    for (var i = 0; i < a.length; i++) {
-        res.push([]);
-        for (var j = 0; j < a[0].length; j++) {
-            res[i][j] = a[i][j] + (a[i][j] * ((Math.random() - 0.5) * 2));
-        }
-    }
-    return res;
-}
-
-function averageMatrices(a, b) {
-    var res = [];
-    for (var i = 0; i < a.length; i++) {
-        res.push([]);
-        for (var j = 0; j < a[0].length; j++) {
-            res[i][j] = (a[i][j] + b[i][j]) / 2;
-        }
-    }
-    return res;
-}
-
 // Pipes
 var pipes = [];
 var pipesInPlay = [];
 pipes[0] = new Pipe();
-pipes[0].y = -100;
+// pipes[0].y = -100;
 pipesInPlay[0] = pipes[0];
 
 var generation = 1;
 var birdNumber = 0;
 var average = 0;
 var bestAverage = 0;
+var previous = [];
+var score = 0;
 
 // Birds
 var birds = [];
-for (var i = 0; i < 20; i++) {
+for (var i = 0; i < 10; i++) {
     birds.push(new Bird(birdNumber));
     birdNumber += 1;
 }
@@ -108,61 +41,49 @@ function compareBirds(a, b) {
     return b.fitness - a.fitness;
 }
 
+
 function evolve() {
     birds.sort(compareBirds);
     var nextGen = [];
 
-    // Best 4 birds progress
-    for (var i = 0; i < 4; i++) {
+    // Best 6 birds progress
+    for (var i = 0; i < 6; i++) {
         nextGen.push(new Bird(birds[i].num));
         nextGen[i].wih = birds[i].wih;
         nextGen[i].who = birds[i].who;
     }
 
-    // Best 2 birds have an offspring from their averages
+    // Two descendants from best two birds
     nextGen.push(new Bird(birdNumber));
     birdNumber += 1;
-    nextGen[4].wih = averageMatrices(birds[0].wih, birds[1].wih);
-    nextGen[4].who = averageMatrices(birds[0].who, birds[1].who);
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
+    [nextGen[4].wih, nextGen[5].wih] = crossover(birds[0].wih, birds[1].wih);
+    [nextGen[4].who, nextGen[5].who] = crossover(birds[0].who, birds[1].who);
 
-    // Best 2 birds have a mutated version progress
-    for (var i = 0; i < 3; i++) {
-        nextGen.push(new Bird(birdNumber));
-        birdNumber += 1;
-        nextGen[i].wih = mutate(birds[i].wih);
-        nextGen[i].who = mutate(birds[i].who);
-    }
+    // Two descendants from 3rd and 4th birds
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
+    nextGen.push(new Bird(birdNumber));
+    birdNumber += 1;
+    [nextGen[6].wih, nextGen[7].wih] = crossover(birds[2].wih, birds[3].wih);
+    [nextGen[6].who, nextGen[7].who] = crossover(birds[2].who, birds[3].who);
 
-    // Best 2 birds have a less mutated version progress
-    for (var i = 0; i < 2; i++) {
-        nextGen.push(new Bird(birdNumber));
-        birdNumber += 1;
-        nextGen[i].wih = mutate(birds[i].wih);
-        nextGen[i].who = birds[i].who;
-    }
+    // Create crossovers from the middle 10
 
-    // Best 2 birds have a less mutated version progress
-    for (var i = 0; i < 2; i++) {
-        nextGen.push(new Bird(birdNumber));
-        birdNumber += 1;
-        nextGen[i].wih = birds[i].wih;
-        nextGen[i].who = mutate(birds[i].who);
-    }
 
-    // The remaining 9 are mutated crossovers of the best
-    for (var i = 0; i < 3; i++) {
-        for (var j = 0; j < 3; j++) {
-            var newBird = new Bird(birdNumber);
-            birdNumber += 1;
-            newBird.wih = mutate(birds[i].wih);
-            newBird.who = mutate(birds[j].who);
-            nextGen.push(newBird);
+    // Mutate the new generation
+    for (var i = 4; i < 10; i++) {
+        if (Math.random() > 0.8) {
+            nextGen[i].wih = mutate(nextGen[i].wih);
+            nextGen[i].who = mutate(nextGen[i].who);
         }
     }
 
     birds = nextGen;
     generation += 1;
 }
+
 
 function draw() {
 
@@ -197,7 +118,6 @@ function draw() {
                     (birds[j].y <= pipes[i].y + pipeNorth.height || birds[j].y + birdImg.height >= pipes[i].y + pipeNorth.height + pipes[i].gap)) {
                     
                     birds[j].live = false;
-                    birds[j].fitness += (1 - (birds[j].y - pipes[i].centre)/ cvs.height);
                 } else if (birds[j].y < 0 || birds[j].y + birdImg.height > cvs.height - fg.height) {
 
                     birds[j].live = false;
@@ -217,32 +137,42 @@ function draw() {
 
         if (pipes[i].x + pipeNorth.width == birds[0].x || pipes[i].x + pipeNorth.width == birds[0].x - 1 ) {
             pipesInPlay.shift();
+            score += 1;
         }
     }
 
     ctx.drawImage(fg, 0, cvs.height - fg.height);
+    ctx.font = "20px Arial";
+    ctx.fillText("Score: " + score, 5, cvs.height - 10)
 
     scores.clearRect(0, 0, scoresCanvas.width, scoresCanvas.height);
     scores.font = "30px Arial";
-    scores.fillText("Generation " + generation, 10, 50);
+    scores.fillText("Generation " + generation, 10, 30);
     scores.font = "15px Arial";
-    scores.fillText("Best average fitness: " + Math.floor(bestAverage), 10, 80);
-    scores.fillText("Average fitness: " + Math.floor(average), 10, 100);
+    scores.fillText("Best average fitness: " + Math.floor(bestAverage), 10, 60);
+    scores.fillText("Average fitness: " + Math.floor(average), 10, 80);
 
-    for (var i = 0; i < 20; i++) {
-        scores.fillText("Bird " + birds[i].num + ": " + birds[i].fitness, 10, 120 + i * 20);
+    for (var i = 0; i < 10; i++) {
+        scores.fillText("Bird " + birds[i].num + ": " + birds[i].fitness, 10, 100 + i * 20);
     }
 
+    scores.fillText("Previous: " + previous, 10, 500);
 
     if (living == false) {
+        previous.push(Math.floor(average));
+        if (previous.length > 10) {
+            previous.shift();
+        }
         pipes = [];
         pipesInPlay = [];
         ctx.clearRect(0, 0, cvs.width, cvs.height);
         evolve();
         pipes[0] = new Pipe();
         pipesInPlay[0] = pipes[0];
-        pipes[0].y = -100;
+        // pipes[0].y = -100;
+        score = 0;
     }
+
     requestAnimationFrame(draw);
 }
 
